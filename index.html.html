@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Switch Continuity Lab Quiz</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --success: #16a34a;
+            --error: #dc2626;
+            --background: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.5;
+            padding: 2rem 1rem;
+            margin: 0;
+        }
+        .container {
+            max-width: 650px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: var(--card);
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+        }
+        .question-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .option-btn {
+            background: var(--background);
+            border: 1px solid #cbd5e1;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            text-align: left;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+        .option-btn:hover {
+            background: #e2e8f0;
+        }
+        .correct {
+            background-color: #dcfce7 !important;
+            border-color: var(--success) !important;
+            color: #15803d;
+            font-weight: bold;
+        }
+        .incorrect {
+            background-color: #fee2e2 !important;
+            border-color: var(--error) !important;
+            color: #b91c1c;
+        }
+        .explanation {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background-color: #eff6ff;
+            border-left: 4px solid var(--primary);
+            font-size: 0.95rem;
+            display: none;
+        }
+        .score-container {
+            text-align: center;
+            padding: 2rem;
+            display: none;
+        }
+        button.action-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 1rem;
+        }
+        button.action-btn:hover {
+            background: #1d4ed8;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Switch Continuity Lab Quiz</h1>
+    <div id="quiz-box"></div>
+    <div id="score-box" class="card score-container"></div>
+</div>
+
+<script>
+const quizData = [
+    {
+        question: "When an SPST switch is in the OFF position, what reading should you see on the multimeter display screen?",
+        options: ["0.0 Ω", "OL (Open Loop)", "120V", "0.5 Ω"],
+        correct: 1,
+        explanation: "'OL' stands for Open Loop or Over Load, indicating infinite resistance. The circuit is open, meaning no continuity exists."
+    },
+    {
+        question: "On a standard 3-Way (SPDT) switch, which terminal is permanently monitored with one probe to map the alternative paths?",
+        options: ["Traveler 1 (T1)", "Traveler 2 (T2)", "The Common Terminal (COM)", "The Ground Screw"],
+        correct: 2,
+        explanation: The Common terminal acts as the pivot point. Current is directed from Common to either Traveler 1 or Traveler 2 depending on toggle position."
+    },
+    {
+        question: "In Position A (Parallel) on a 4-Way switch, which paths display continuity (0.0 Ω)?",
+        options: [
+            "TL to TR & BL to BR",
+            "TL to BL & TR to BR",
+            "TL to BR & TR to BL",
+            "No paths display continuity"
+        ],
+        correct: 1,
+        explanation: "In parallel or straight mode, continuity passes directly through from Top-Left to Bottom-Left, and Top-Right to Bottom-Right."
+    },
+    {
+        question: "When a 4-way switch is flipped to Position B (Crossover), how does the continuity path change?",
+        options: [
+            "It opens all contacts entirely (OL).",
+            "It paths straight across horizontally.",
+            "It crosses diagonally (TL to BR and TR to BL).",
+            "It connects all four terminals together."
+        ],
+        correct: 2,
+        explanation: "The 4-way switch acts as an internal crossover mechanism, reversing the connections diagonally to change the traveler loop sequence."
+    },
+    {
+        question: "To control a single light fixture from 4 separate doorways, how many 3-way and 4-way switches must you use?",
+        options: [
+            "Four 4-way switches",
+            "Two 3-way switches and two 4-way switches",
+            "Three 3-way switches and one 4-way switch",
+            "Four 3-way switches"
+        ],
+        correct: 1,
+        explanation: "Every multi-location lighting system uses exactly two 3-way switches on the outer ends. Any additional control spots in the middle require 4-way switches."
+    }
+];
+
+let currentQuestionIndex = 0;
+let score = 0;
+
+const quizBox = document.getElementById('quiz-box');
+const scoreBox = document.getElementById('score-box');
+
+function loadQuestion() {
+    if (currentQuestionIndex >= quizData.length) {
+        showResults();
+        return;
+    }
+    
+    const data = quizData[currentQuestionIndex];
+    quizBox.innerHTML = `
+        <div class="card">
+            <div class="question-title">Question ${currentQuestionIndex + 1} of ${quizData.length}: ${data.question}</div>
+            <div class="options" id="options-container">
+                ${data.options.map((option, idx) => `
+                    <button class="option-btn" onclick="checkAnswer(idx)">{option}</button>
+                `).join('')}
+            </div>
+            <div class="explanation" id="explanation-box">${data.explanation}</div>
+            <button class="action-btn" id="next-btn" style="display:none;" onclick="nextQuestion()">Next Question</button>
+        </div>
+    `;
+}
+
+function checkAnswer(selectedIndex) {
+    const data = quizData[currentQuestionIndex];
+    const buttons = document.getElementById('options-container').getElementsByClassName('option-btn');
+    
+    // Disable all options after clicking
+    for (let i = 0; i < buttons.length; i++) {
+        buttons[i].disabled = true;
+        if (i === data.correct) {
+            buttons[i].classList.add('correct');
+        }
+    }
+    
+    if (selectedIndex === data.correct) {
+        score++;
+    } else {
+        buttons[selectedIndex].classList.add('incorrect');
+    }
+    
+    document.getElementById('explanation-box').style.display = 'block';
+    document.getElementById('next-btn').style.display = 'block';
+}
+
+function nextQuestion() {
+    currentQuestionIndex++;
+    loadQuestion();
+}
+
+function showResults() {
+    quizBox.style.display = 'none';
+    scoreBox.style.display = 'block';
+    scoreBox.innerHTML = `
+        <h2>Quiz Completed!</h2>
+        <p style="font-size: 1.5rem; margin: 1rem 0;">You scored <strong>${score}</strong> out of <strong>${quizData.length}</strong>.</p>
+        <p>Percentage: ${Math.round((score / quizData.length) * 100)}%</p>
+        <button class="action-btn" onclick="resetQuiz()">Restart Quiz</button>
+    `;
+}
+
+function resetQuiz() {
+    currentQuestionIndex = 0;
+    score = 0;
+    quizBox.style.display = 'block';
+    scoreBox.style.display = 'none';
+    loadQuestion();
+}
+
+// Initial initialization
+loadQuestion();
+</script>
+
+</body>
+</html>
